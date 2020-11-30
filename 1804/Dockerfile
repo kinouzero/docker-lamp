@@ -82,5 +82,5 @@ ENV PHP_VERSION 7.4
 # Add volumes for the app and MySql
 VOLUME  ["/var/lib/mysql", "/app" ]
 
-EXPOSE 80 3306
+EXPOSE 80 3306 9001
 CMD ["/run.sh"]
