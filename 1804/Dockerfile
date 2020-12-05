@@ -58,12 +58,6 @@ RUN a2enmod rewrite
 RUN mkdir -p /app && rm -fr /var/www/html && ln -s /app /var/www/html
 ADD app/ /app
 
-# Install PHPRedMin
-RUN cd /var/www/html; git clone https://github.com/sasanrose/phpredmin.git
-
-# Install PimpMyLogs
-RUN cd /var/www/html; git clone https://github.com/potsky/PimpMyLog.git
-
 #Environment variables to configure php
 ENV PHP_UPLOAD_MAX_FILESIZE 10M
 ENV PHP_POST_MAX_SIZE 10M
