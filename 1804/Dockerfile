@@ -1,6 +1,9 @@
 FROM phusion/baseimage:0.11
-MAINTAINER Matthew Rayner <hello@rayner.io>
+MAINTAINER Kevin Lambard <kevin.lambard@gmail.com>
 ENV REFRESHED_AT 2019-06-11
+
+# based on mattrayner/docker-lamp
+# MAINTAINER Matthew Rayner <hello@rayner.io>
 
 # based on dgraziotin/lamp
 # MAINTAINER Daniel Graziotin <daniel@ineed.coffee>
@@ -11,14 +14,11 @@ ENV DOCKER_USER_GID 20
 ENV BOOT2DOCKER_ID 1000
 ENV BOOT2DOCKER_GID 50
 
-ENV PHPMYADMIN_VERSION=5.0.2
 ENV SUPERVISOR_VERSION=4.2.0
 
 # Tweaks to give Apache/PHP write permissions to the app
 RUN usermod -u ${BOOT2DOCKER_ID} www-data && \
     usermod -G staff www-data && \
-    useradd -r mysql && \
-    usermod -G staff mysql && \
     groupmod -g $(($BOOT2DOCKER_GID + 10000)) $(getent group $BOOT2DOCKER_GID | cut -d: -f1) && \
     groupmod -g ${BOOT2DOCKER_GID} staff
 
@@ -28,7 +28,7 @@ RUN add-apt-repository -y ppa:ondrej/php && \
   apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 4F4EA0AAE5267A6C && \
   apt-get update && \
   apt-get -y upgrade && \
-  apt-get -y install postfix python3-setuptools wget git apache2 php-xdebug php-redis php-pgsql libapache2-mod-php mysql-server php-mysql pwgen php-apcu php-gd php-xml php-mbstring php-gettext zip unzip php-zip curl php-curl && \
+  apt-get -y install postfix python3-setuptools wget git apache2 php-xdebug php-redis php-pgsql libapache2-mod-php php-mysql pwgen php-apcu php-gd php-xml php-mbstring php-gettext zip unzip php-zip curl php-curl && \
   apt-get -y autoremove && \
   echo "ServerName localhost" >> /etc/apache2/apache2.conf
 
@@ -39,25 +39,10 @@ RUN curl -L https://pypi.io/packages/source/s/supervisor/supervisor-${SUPERVISOR
 
 # Add image configuration and scripts
 ADD supporting_files/start-apache2.sh /start-apache2.sh
-ADD supporting_files/start-mysqld.sh /start-mysqld.sh
 ADD supporting_files/run.sh /run.sh
 RUN chmod 755 /*.sh
 ADD supporting_files/supervisord-apache2.conf /etc/supervisor/conf.d/supervisord-apache2.conf
-ADD supporting_files/supervisord-mysqld.conf /etc/supervisor/conf.d/supervisord-mysqld.conf
 ADD supporting_files/supervisord.conf /etc/supervisor/supervisord.conf
-ADD supporting_files/mysqld_innodb.cnf /etc/mysql/conf.d/mysqld_innodb.cnf
-
-# Remove pre-installed database
-RUN rm -rf /var/lib/mysql
-
-# Add MySQL utils
-ADD supporting_files/create_mysql_users.sh /create_mysql_users.sh
-
-# Add phpmyadmin
-RUN wget -O /tmp/phpmyadmin.tar.gz https://files.phpmyadmin.net/phpMyAdmin/${PHPMYADMIN_VERSION}/phpMyAdmin-${PHPMYADMIN_VERSION}-all-languages.tar.gz
-RUN tar xfvz /tmp/phpmyadmin.tar.gz -C /var/www
-RUN ln -s /var/www/phpMyAdmin-${PHPMYADMIN_VERSION}-all-languages /var/www/phpmyadmin
-RUN mv /var/www/phpmyadmin/config.sample.inc.php /var/www/phpmyadmin/config.inc.php
 
 # Add composer
 RUN php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" && \
@@ -65,8 +50,7 @@ RUN php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" &&
     php -r "unlink('composer-setup.php');" && \
     mv composer.phar /usr/local/bin/composer
 
-ENV MYSQL_PASS:-$(pwgen -s 12 1)
-# config to enable .htaccess
+# Config to enable .htaccess
 ADD supporting_files/apache_default /etc/apache2/sites-available/000-default.conf
 RUN a2enmod rewrite
 
@@ -74,13 +58,21 @@ RUN a2enmod rewrite
 RUN mkdir -p /app && rm -fr /var/www/html && ln -s /app /var/www/html
 ADD app/ /app
 
+# Install PHPRedMin
+RUN cd /var/www/html; git clone https://github.com/sasanrose/phpredmin.git
+ADD config/phpredmin/config.php /var/www/html/phpredmin/config.php
+
+# Install PimpMyLogs
+RUN cd /var/www/html; git clone https://github.com/potsky/PimpMyLog.git
+ADD config/pimpmylog/config.user.json /var/www/html/PimpMyLog/config.user.json
+
 #Environment variables to configure php
 ENV PHP_UPLOAD_MAX_FILESIZE 10M
 ENV PHP_POST_MAX_SIZE 10M
 ENV PHP_VERSION 7.4
 
-# Add volumes for the app and MySql
-VOLUME  ["/var/lib/mysql", "/app" ]
+# Add volumes for the app
+VOLUME  ["/app"]
 
-EXPOSE 80 3306 9081
+EXPOSE 80 9081
 CMD ["/run.sh"]
