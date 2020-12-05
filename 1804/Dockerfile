@@ -74,5 +74,5 @@ ENV PHP_VERSION 7.4
 # Add volumes for the app
 VOLUME  ["/app"]
 
-EXPOSE 80 9081
+EXPOSE 80
 CMD ["/run.sh"]
