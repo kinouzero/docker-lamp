@@ -60,11 +60,9 @@ ADD app/ /app
 
 # Install PHPRedMin
 RUN cd /var/www/html; git clone https://github.com/sasanrose/phpredmin.git
-ADD config/phpredmin/config.php /var/www/html/phpredmin/config.php
 
 # Install PimpMyLogs
 RUN cd /var/www/html; git clone https://github.com/potsky/PimpMyLog.git
-ADD config/pimpmylog/config.user.json /var/www/html/PimpMyLog/config.user.json
 
 #Environment variables to configure php
 ENV PHP_UPLOAD_MAX_FILESIZE 10M
